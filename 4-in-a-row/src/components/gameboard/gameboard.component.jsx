@@ -1,0 +1,339 @@
+import { useEffect, useState } from "react";
+import Board from "../board/board.component";
+import Timers from "../timers/timers.component";
+import Indicator from "../indicator/indicator.component";
+
+function GameBoard({
+  playerNames,
+  currentPlayer: initialPlayer,
+  gameMode,
+  onExit,
+}) {
+  const numRows = 6;
+  const numCols = 7;
+  const [resetSignal, setResetSignal] = useState(0);
+  const [stopSignal, setStopSignal] = useState(0); // Estado para parar o timer
+  const [randomcolor, setRandomColor] = useState(null);
+  const [winner, setWinner] = useState(0); // Estado para o vencedor
+  const [showEndMenu, setShowEndMenu] = useState(false);
+  const [winnerName, setWinnerName] = useState("");
+  const [hoverCol, setHoverCol] = useState(null);
+  const [especialCells, setEspecialCells] = useState(0); // Estado para o número de células especiais
+  const [board, setBoard] = useState(
+    Array.from({ length: numRows }, () => Array(numCols).fill(null))
+  );
+  const [plays, setPlays] = useState(1); // Estado para o número de jogadas
+
+  const [specialCells, setSpecialCells] = useState([]); // Estado para células especiais
+  const [currentPlayer, setCurrentPlayer] = useState(initialPlayer); // Inicializa com o jogador recebido como prop
+  // Gera 5 posições especiais ao iniciar o jogo
+  useEffect(() => {
+    const totalCells = numRows * numCols;
+    const usedPositions = new Set();
+
+    while (usedPositions.size < 5) {
+      const randIndex = Math.floor(Math.random() * totalCells);
+      usedPositions.add(randIndex);
+    }
+
+    const specials = Array.from(usedPositions).map((index) => [
+      Math.floor(index / numCols),
+      index % numCols,
+    ]);
+
+    setSpecialCells(specials);
+
+    // Define randomcolor no estado
+    setRandomColor(Math.floor(Math.random() * 2)); // 0 ou 1
+
+    if (gameMode === "1vCPU") {
+      setCurrentPlayer("R"); // Inicializa com o jogador recebido como prop
+    }
+  }, [especialCells]);
+
+  useEffect(() => {
+    if (!winner) {
+      checkWinner(); // Chama a função checkWinner sempre que o tabuleiro ou o jogador atual mudam
+    }
+
+    if (plays === 42 && winner === 0) {
+      setTimeout(() => {
+        const validCols = [];
+        for (let col = 0; col < numCols; col++) {
+          if (board[0][col] === null) {
+            validCols.push(col);
+          }
+        }
+
+        if (validCols.length > 0) {
+          setWinner(1); // Define o vencedor como 1 (empate)
+          setWinnerName("Empate"); // Define o nome do vencedor como "Empate"
+          setShowEndMenu(true); // Mostra o menu de fim de jogo
+          setStopSignal((prev) => prev + 1); // Incrementa o stopSignal para parar o timer
+        }
+      }, 1000);
+    }
+    if (currentPlayer === "Y" && gameMode === "1vCPU" && plays > 1 && !winner) {
+      cpuMove(); // Chama a função cpuMove quando o jogador atual é "Y" e o modo de jogo é 1vCPU
+    }
+  }, [currentPlayer, board]);
+
+  const switchPlayer = () => {
+    setCurrentPlayer((prev) => (prev === "R" ? "Y" : "R"));
+  };
+
+  const dropDisc = (col) => {
+    const newBoard = board.map((r) => [...r]);
+
+    for (let row = numRows - 1; row >= 0; row--) {
+      if (!newBoard[row][col]) {
+        //verifica se a célula está vazia para a coluna escolhida
+        newBoard[row][col] = currentPlayer;
+        setBoard(newBoard);
+        console.log("Jogada feita na coluna:", col, "por", currentPlayer);
+        const isSpecial = specialCells.some(
+          //verifica se a célula é especial
+          ([r, c]) => r === row && c === col
+        );
+
+        if (!isSpecial) {
+          switchPlayer(); // Só troca se não for especial
+        } else {
+          setResetSignal((prev) => prev + 1); // Incrementa o resetSignal para reiniciar o timer
+          console.log("🎉 Jogada especial! Joga outra vez!");
+        }
+        setPlays((prev) => prev + 1); // Incrementa o número de jogadas
+        console.log("Número de jogadas:", plays); // Exibe o número de jogadas no console
+        return;
+      }
+    }
+
+    console.log("Coluna cheia!");
+  };
+
+  const cpuMove = () => {
+    if (gameMode === "1vCPU" && currentPlayer === "Y") {
+      const timeout = setTimeout(() => {
+        // Filtra colunas que ainda têm espaço
+        const validCols = [];
+        for (let col = 0; col < numCols; col++) {
+          if (board[0][col] === null) {
+            validCols.push(col);
+          }
+        }
+
+        if (validCols.length > 0) {
+          const randomCol =
+            validCols[Math.floor(Math.random() * validCols.length)];
+          dropDisc(randomCol);
+        } else {
+          console.log("O tabuleiro está cheio, o CPU não pode jogar.");
+        }
+      }, 2000); // Espera 1s para simular "pensamento"
+
+      return () => clearTimeout(timeout);
+    }
+  };
+
+  const checkWinner = () => {
+    const directions = [
+      { r: 0, c: 1 }, // Horizontal →
+      { r: 1, c: 0 }, // Vertical ↓
+      { r: 1, c: 1 }, // Diagonal ↘
+      { r: 1, c: -1 }, // Diagonal ↙
+    ];
+
+    for (let row = 0; row < numRows; row++) {
+      for (let col = 0; col < numCols; col++) {
+        const cell = board[row][col];
+        if (!cell) continue;
+
+        for (const { r, c } of directions) {
+          let count = 1;
+          for (let i = 1; i < 4; i++) {
+            const newRow = row + r * i;
+            const newCol = col + c * i;
+
+            if (
+              newRow >= 0 &&
+              newRow < numRows &&
+              newCol >= 0 &&
+              newCol < numCols &&
+              board[newRow][newCol] === cell
+            ) {
+              count++;
+            } else {
+              break;
+            }
+          }
+
+          if (count === 4) {
+            // Retrocede 3 passos a partir da última posição
+            const newBoard = board.map((r) => [...r]);
+            for (let p = 0; p < numRows; p++) {
+              for (let q = 0; q < numCols; q++) {
+                newBoard[p][q] = "F";
+              }
+            }
+
+            for (let i = 0; i < 4; i++) {
+              const winRow = row + r * i;
+              const winCol = col + c * i;
+              newBoard[winRow][winCol] = cell === "R" ? "R" : "Y";
+            }
+            setBoard(newBoard);
+            setWinner(1);
+
+            setStopSignal((prev) => prev + 1); // Incrementa o stopSignal para parar o timer
+            setTimeout(() => {
+              if (cell === "R") {
+                setWinnerName(playerNames.R); // Define o nome do vencedor como o jogador R
+                setShowEndMenu(true); // Mostra o menu de fim de jogo
+              } else {
+                setWinnerName(playerNames.Y); // Define o nome do vencedor como o jogador Y
+                setShowEndMenu(true); // Mostra o menu de fim de jogo
+              }
+            }, 2500);
+            return cell;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const resetgame = () => {
+    setBoard(Array.from({ length: numRows }, () => Array(numCols).fill(null)));
+    setPlays(1); // Reinicia o número de jogadas
+    setCurrentPlayer(initialPlayer); // Reinicia o jogador atual
+    setWinner(0); // Reinicia o vencedor
+    setResetSignal((prev) => prev + 1); // Incrementa o resetSignal para reiniciar o timer
+    setStopSignal((prev) => 0); // Incrementa o stopSignal para parar o timer
+    setEspecialCells((prev) => prev + 1); // Reinicia as células especiais
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center w-full h-screen bg-blue-950">
+      {showEndMenu && (
+        <div className="fixed top-0 left-0 w-full bg-black text-white py-4 px-8 text-center z-50 animate-slide-down shadow-lg ">
+          <h2 className="text-xl font-bold">
+            {winnerName === "Empate"
+              ? "O jogo terminou em empate!"
+              : `🏆 ${winnerName} venceu o jogo!`}
+          </h2>
+          <button
+            className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded cursor-pointer"
+            onClick={() => {
+              resetgame();
+              setShowEndMenu(false);
+            }}
+          >
+            Jogar novamente
+          </button>
+          <button
+            className="mt-2 px-4 py-2 bg-green-700 hover:bg-green-900 rounded cursor-pointer ml-1"
+            onClick={() => {
+              onExit(); // Chama a função onExit passada como prop
+            }}
+          >
+            Sair
+          </button>
+        </div>
+      )}
+
+      <Timers
+        currentPlayer={currentPlayer}
+        onTimeout={switchPlayer}
+        name1={playerNames.R}
+        name2={playerNames.Y}
+        resetSignal={resetSignal} // Passa o resetSignal para reiniciar o timer
+        stopSignal={stopSignal}
+        color={randomcolor} // Passa o randomcolor para o Timer
+      />
+
+      <div className="relative w-full max-w-[600px] aspect-[7/6] mb-25">
+        <Board />
+        <Indicator hoverCol={hoverCol} numCols={numCols} />
+        {/* Grelha com fichas */}
+        <div
+          className="absolute grid grid-cols-7 grid-rows-6 z-10"
+          style={{
+            left: "7.2%",
+            top: "8%",
+            width: "86%",
+            height: "84.5%",
+          }}
+        >
+          {board.flat().map((cell, i) => {
+            const row = Math.floor(i / numCols);
+            const col = i % numCols;
+
+            const isSpecial = specialCells.some(
+              ([r, c]) => r === row && c === col
+            );
+
+            return (
+              <div key={i} className="flex items-center justify-center">
+                {cell && (
+                  <div
+                    className={`w-[97%] aspect-square rounded-full shadow-md ${
+                      cell === "R"
+                        ? randomcolor === 1
+                          ? "bg-red-500"
+                          : "bg-green-500"
+                        : cell === "Y"
+                        ? randomcolor === 1
+                          ? "bg-yellow-400"
+                          : "bg-white"
+                        : "bg-black" // cor para as fichas de highlight (F)
+                    }`}
+                  />
+                )}
+
+                {/* Mostrar célula especial se ainda não tiver ficha */}
+                {!cell && isSpecial && (
+                  <div className="w-[86%] aspect-square rounded-full bg-purple-700 opacity-92 shadow-md outline-4 outline-pink-800 " />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Colunas clicáveis */}
+        <div
+          className="absolute z-20"
+          style={{
+            left: "7%",
+            top: "6.5%",
+            width: "86%",
+            height: "87%",
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+          }}
+        >
+          {Array(numCols)
+            .fill(0)
+            .map((_, col) => (
+              <div
+                key={col}
+                className="cursor-pointer"
+                onMouseEnter={() => setHoverCol(col)}
+                onMouseLeave={() => setHoverCol(null)}
+                onClick={() => {
+                  if (gameMode === "1vCPU" && currentPlayer === "Y") {
+                    return console.log("Vez do Cpu"); // Impede jogadas do player durante a vez do CPU
+                  } else if (winner) {
+                    return console.log("Jogo terminado!"); // Impede jogadas após o jogo ter terminado}
+                  } else {
+                    dropDisc(col);
+                  }
+                }}
+              />
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default GameBoard;
