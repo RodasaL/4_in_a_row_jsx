@@ -4,7 +4,6 @@ function PlayerNames({ onNamesSet, gameMode }) {
   const [nameR, setNameR] = useState("");
   const [nameY, setNameY] = useState("");
 
-  // ✅ Seta automaticamente o nome do jogador 2 como "CPU" no modo 1vCPU
   useEffect(() => {
     if (gameMode === "1vCPU") {
       setNameY("CPU");

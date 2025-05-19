@@ -1,23 +1,23 @@
 import { useState } from "react";
-import Header from "./components/header/header.component";
 import GameBoard from "./components/gameboard/gameboard.component";
 import PlayerNames from "./components/playernames/playernames.component";
+import Startmenu from "./components/startmenu/startmenu.component";
 
 function App() {
   const [playerNames, setPlayerNames] = useState(null);
   const [currentPlayer, setCurrentPlayer] = useState(null);
   const [gameMode, setGameMode] = useState("1v1");
-  const [isAskingNames, setIsAskingNames] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false); // 👈 novo estado
+  const [hasNames, setNames] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false); 
 
   return (
     <div id="container" className="bg-blue-950 h-screen overflow-hidden">
       {!isPlaying ? (
-        !isAskingNames ? (
-          <Header
+        !hasNames ? (
+          <Startmenu
             startPlayer={setCurrentPlayer}
             setGameMode={setGameMode}
-            onStartGame={() => setIsAskingNames(true)}
+            onStartGame={() => setNames(true)}
           />
         ) : !playerNames ? (
           <PlayerNames
@@ -38,7 +38,7 @@ function App() {
               //  reset  limpar tudo
               setPlayerNames(null);
               setCurrentPlayer(null);
-              setIsAskingNames(false);
+              setNames(false);
               setIsPlaying(false);
             }}
           />

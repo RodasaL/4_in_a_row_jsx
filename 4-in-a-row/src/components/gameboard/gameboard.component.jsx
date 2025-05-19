@@ -12,21 +12,24 @@ function GameBoard({
   const numRows = 6;
   const numCols = 7;
   const [resetSignal, setResetSignal] = useState(0);
-  const [stopSignal, setStopSignal] = useState(0); // Estado para parar o timer
+  const [stopSignal, setStopSignal] = useState(0);
   const [randomcolor, setRandomColor] = useState(null);
-  const [winner, setWinner] = useState(0); // Estado para o vencedor
+  const [winner, setWinner] = useState(0);
   const [showEndMenu, setShowEndMenu] = useState(false);
   const [winnerName, setWinnerName] = useState("");
   const [hoverCol, setHoverCol] = useState(null);
-  const [especialCells, setEspecialCells] = useState(0); // Estado para o número de células especiais
+  const [nspecialCells, setnumberSpecialCells] = useState(0); // Estado para as celulas especiais
+  const [specialCells, setSpecialCells] = useState([]);  // array de células especiais
   const [board, setBoard] = useState(
     Array.from({ length: numRows }, () => Array(numCols).fill(null))
   );
-  const [plays, setPlays] = useState(1); // Estado para o número de jogadas
+  const [plays, setPlays] = useState(0);
 
-  const [specialCells, setSpecialCells] = useState([]); // Estado para células especiais
-  const [currentPlayer, setCurrentPlayer] = useState(initialPlayer); // Inicializa com o jogador recebido como prop
-  // Gera 5 posições especiais ao iniciar o jogo
+  
+  const [currentPlayer, setCurrentPlayer] = useState(initialPlayer); 
+  useEffect(() => {
+    console.log("Jogadas:", plays);
+  },[plays]);
   useEffect(() => {
     const totalCells = numRows * numCols;
     const usedPositions = new Set();
@@ -43,17 +46,16 @@ function GameBoard({
 
     setSpecialCells(specials);
 
-    // Define randomcolor no estado
     setRandomColor(Math.floor(Math.random() * 2)); // 0 ou 1
 
     if (gameMode === "1vCPU") {
-      setCurrentPlayer("R"); // Inicializa com o jogador recebido como prop
+      setCurrentPlayer("R"); 
     }
-  }, [especialCells]);
+  }, [nspecialCells]);
 
   useEffect(() => {
     if (!winner) {
-      checkWinner(); // Chama a função checkWinner sempre que o tabuleiro ou o jogador atual mudam
+      checkWinner(); 
     }
 
     if (plays === 42 && winner === 0) {
@@ -65,16 +67,21 @@ function GameBoard({
           }
         }
 
-        if (validCols.length > 0) {
-          setWinner(1); // Define o vencedor como 1 (empate)
-          setWinnerName("Empate"); // Define o nome do vencedor como "Empate"
-          setShowEndMenu(true); // Mostra o menu de fim de jogo
-          setStopSignal((prev) => prev + 1); // Incrementa o stopSignal para parar o timer
+        if (validCols.length === 0) {
+          setWinner(1); 
+          setWinnerName("Empate"); 
+          setShowEndMenu(true); 
+          setStopSignal((prev) => prev + 1); 
+          console.log("Empate!");
+        }
+        else {
+          console.log(`Playstest ${plays}`);
         }
       }, 1000);
     }
-    if (currentPlayer === "Y" && gameMode === "1vCPU" && plays > 1 && !winner) {
-      cpuMove(); // Chama a função cpuMove quando o jogador atual é "Y" e o modo de jogo é 1vCPU
+    
+    if (currentPlayer === "Y" && gameMode === "1vCPU" && !winner) {
+      cpuMove(); 
     }
   }, [currentPlayer, board]);
 
@@ -87,23 +94,20 @@ function GameBoard({
 
     for (let row = numRows - 1; row >= 0; row--) {
       if (!newBoard[row][col]) {
-        //verifica se a célula está vazia para a coluna escolhida
         newBoard[row][col] = currentPlayer;
         setBoard(newBoard);
         console.log("Jogada feita na coluna:", col, "por", currentPlayer);
         const isSpecial = specialCells.some(
-          //verifica se a célula é especial
           ([r, c]) => r === row && c === col
         );
 
         if (!isSpecial) {
-          switchPlayer(); // Só troca se não for especial
+          switchPlayer(); 
         } else {
-          setResetSignal((prev) => prev + 1); // Incrementa o resetSignal para reiniciar o timer
-          console.log("🎉 Jogada especial! Joga outra vez!");
+          setResetSignal((prev) => prev + 1); 
+          console.log("Jogada especial! Joga outra vez!");
         }
-        setPlays((prev) => prev + 1); // Incrementa o número de jogadas
-        console.log("Número de jogadas:", plays); // Exibe o número de jogadas no console
+        setPlays((prev) => prev + 1); 
         return;
       }
     }
@@ -114,7 +118,6 @@ function GameBoard({
   const cpuMove = () => {
     if (gameMode === "1vCPU" && currentPlayer === "Y") {
       const timeout = setTimeout(() => {
-        // Filtra colunas que ainda têm espaço
         const validCols = [];
         for (let col = 0; col < numCols; col++) {
           if (board[0][col] === null) {
@@ -129,7 +132,7 @@ function GameBoard({
         } else {
           console.log("O tabuleiro está cheio, o CPU não pode jogar.");
         }
-      }, 2000); // Espera 1s para simular "pensamento"
+      }, 2000); 
 
       return () => clearTimeout(timeout);
     }
@@ -137,10 +140,10 @@ function GameBoard({
 
   const checkWinner = () => {
     const directions = [
-      { r: 0, c: 1 }, // Horizontal →
-      { r: 1, c: 0 }, // Vertical ↓
-      { r: 1, c: 1 }, // Diagonal ↘
-      { r: 1, c: -1 }, // Diagonal ↙
+      { r: 0, c: 1 }, // Horizontal 
+      { r: 1, c: 0 }, // Vertical 
+      { r: 1, c: 1 }, // Diagonal D
+      { r: 1, c: -1 }, // Diagonal E
     ];
 
     for (let row = 0; row < numRows; row++) {
@@ -168,7 +171,9 @@ function GameBoard({
           }
 
           if (count === 4) {
-            // Retrocede 3 passos a partir da última posição
+            setStopSignal((prev) => prev + 1); 
+      
+    
             const newBoard = board.map((r) => [...r]);
             for (let p = 0; p < numRows; p++) {
               for (let q = 0; q < numCols; q++) {
@@ -184,14 +189,13 @@ function GameBoard({
             setBoard(newBoard);
             setWinner(1);
 
-            setStopSignal((prev) => prev + 1); // Incrementa o stopSignal para parar o timer
             setTimeout(() => {
               if (cell === "R") {
-                setWinnerName(playerNames.R); // Define o nome do vencedor como o jogador R
-                setShowEndMenu(true); // Mostra o menu de fim de jogo
+                setWinnerName(playerNames.R); 
+                setShowEndMenu(true); 
               } else {
-                setWinnerName(playerNames.Y); // Define o nome do vencedor como o jogador Y
-                setShowEndMenu(true); // Mostra o menu de fim de jogo
+                setWinnerName(playerNames.Y); 
+                setShowEndMenu(true); 
               }
             }, 2500);
             return cell;
@@ -204,12 +208,12 @@ function GameBoard({
 
   const resetgame = () => {
     setBoard(Array.from({ length: numRows }, () => Array(numCols).fill(null)));
-    setPlays(1); // Reinicia o número de jogadas
-    setCurrentPlayer(initialPlayer); // Reinicia o jogador atual
-    setWinner(0); // Reinicia o vencedor
-    setResetSignal((prev) => prev + 1); // Incrementa o resetSignal para reiniciar o timer
-    setStopSignal((prev) => 0); // Incrementa o stopSignal para parar o timer
-    setEspecialCells((prev) => prev + 1); // Reinicia as células especiais
+    setPlays(0); 
+    setCurrentPlayer(initialPlayer); 
+    setWinner(0);
+    setResetSignal((prev) => prev + 1);
+    setStopSignal((prev) => 0); 
+    setnumberSpecialCells((prev) => prev + 1); 
   };
 
   return (
@@ -233,28 +237,28 @@ function GameBoard({
           <button
             className="mt-2 px-4 py-2 bg-green-700 hover:bg-green-900 rounded cursor-pointer ml-1"
             onClick={() => {
-              onExit(); // Chama a função onExit passada como prop
+              onExit(); 
             }}
           >
             Sair
           </button>
         </div>
       )}
-
+   
       <Timers
         currentPlayer={currentPlayer}
         onTimeout={switchPlayer}
         name1={playerNames.R}
         name2={playerNames.Y}
-        resetSignal={resetSignal} // Passa o resetSignal para reiniciar o timer
+        resetSignal={resetSignal} 
         stopSignal={stopSignal}
-        color={randomcolor} // Passa o randomcolor para o Timer
+        color={randomcolor} 
       />
 
-      <div className="relative w-full max-w-[600px] aspect-[7/6] mb-25">
+      <div className="relative w-full max-w-[600px] aspect-[7/6] mb-23 pt-6">
         <Board />
         <Indicator hoverCol={hoverCol} numCols={numCols} />
-        {/* Grelha com fichas */}
+        {/* Grid fichas */}
         <div
           className="absolute grid grid-cols-7 grid-rows-6 z-10"
           style={{
@@ -285,12 +289,12 @@ function GameBoard({
                         ? randomcolor === 1
                           ? "bg-yellow-400"
                           : "bg-white"
-                        : "bg-black" // cor para as fichas de highlight (F)
+                        : "bg-black" 
                     }`}
                   />
                 )}
 
-                {/* Mostrar célula especial se ainda não tiver ficha */}
+                {/* Special cells */}
                 {!cell && isSpecial && (
                   <div className="w-[86%] aspect-square rounded-full bg-purple-700 opacity-92 shadow-md outline-4 outline-pink-800 " />
                 )}
@@ -299,7 +303,7 @@ function GameBoard({
           })}
         </div>
 
-        {/* Colunas clicáveis */}
+        {/* Cols clicáveis */}
         <div
           className="absolute z-20"
           style={{
@@ -321,9 +325,9 @@ function GameBoard({
                 onMouseLeave={() => setHoverCol(null)}
                 onClick={() => {
                   if (gameMode === "1vCPU" && currentPlayer === "Y") {
-                    return console.log("Vez do Cpu"); // Impede jogadas do player durante a vez do CPU
+                    return console.log("Vez do Cpu"); 
                   } else if (winner) {
-                    return console.log("Jogo terminado!"); // Impede jogadas após o jogo ter terminado}
+                    return console.log("Jogo terminado!"); 
                   } else {
                     dropDisc(col);
                   }
@@ -332,7 +336,7 @@ function GameBoard({
             ))}
         </div>
       </div>
-    </div>
+      </div>
   );
 }
 

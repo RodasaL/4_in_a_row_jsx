@@ -1,20 +1,20 @@
 import React, { useState } from "react";
 
-function Header({ startPlayer, setGameMode, onStartGame }) {
+function Startmenu({ startPlayer, setGameMode, onStartGame }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [gameMode, setLocalGameMode] = useState("1v1"); // Estado local para o modo de jogo
+  const [gameMode, setLocalGameMode] = useState("1v1"); 
 
   const handlePlayClick = () => {
-    setIsPlaying(true); // Esconde o botão
-    const randomPlayer = Math.random() < 0.5 ? "R" : "Y"; // Escolhe um jogador aleatoriamente
-    startPlayer(randomPlayer); // Define o jogador inicial
-    setGameMode(gameMode); // Envia o modo de jogo selecionado para o componente pai
-    onStartGame(); // Inicia o jogo
+    setIsPlaying(true); 
+    const randomPlayer = Math.random() < 0.5 ? "R" : "Y"; 
+    startPlayer(randomPlayer); 
+    setGameMode(gameMode); 
+    onStartGame();
   };
 
   const toggleGameMode = () => {
     const newMode = gameMode === "1v1" ? "1vCPU" : "1v1";
-    setLocalGameMode(newMode); // Atualiza o estado local
+    setLocalGameMode(newMode); 
     
   };
 
@@ -60,4 +60,4 @@ function Header({ startPlayer, setGameMode, onStartGame }) {
   );
 }
 
-export default Header;
+export default Startmenu;

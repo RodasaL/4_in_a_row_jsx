@@ -16,8 +16,10 @@ function Timers({
   const startRef = useRef(Date.now());
 
   const updateTime_ = useCallback(() => {
-    if (stopSignal > 0)
-      return; // Se o jogo estiver parado, não atualiza o timer
+    if (stopSignal > 0){
+       cancelAnimationFrame(requestRef.current);
+      return;
+ } // Se o jogo estiver parado, não atualiza o timer
     else {
       const now = Date.now();
       const elapsed = Math.floor((now - startRef.current) / 1000);
@@ -40,19 +42,19 @@ function Timers({
     }
 
     requestRef.current = requestAnimationFrame(updateTime_);
-  }, [currentPlayer, onTimeout]);
+  }, [currentPlayer, onTimeout,stopSignal]);
+useEffect(() => {
+  if (stopSignal > 0) {
+    cancelAnimationFrame(requestRef.current);
+    return;
+  }
 
-  useEffect(() => {
-    startRef.current = Date.now();
-    requestRef.current = requestAnimationFrame(updateTime_);
+  startRef.current = Date.now();
+  requestRef.current = requestAnimationFrame(updateTime_);
 
-    return () => cancelAnimationFrame(requestRef.current);
-  }, [currentPlayer, resetSignal]);
+  return () => cancelAnimationFrame(requestRef.current);
+}, [currentPlayer, resetSignal, stopSignal]);
 
-  useEffect(() => {
-    setTimeR(0);
-    setTimeY(0);
-  }, [stopSignal]);
   // Lógica condicional para renderizar os timers
   let timerContent;
   if (color === 1) {
@@ -100,7 +102,7 @@ function Timers({
   }
 
   return (
-    <div className="flex justify-center space-x-10 items-center w-full text-white my-1">
+    <div className="flex justify-center space-x-10 items-center w-full text-white my-1 pb-3.5">
       {timerContent}
     </div>
   );
